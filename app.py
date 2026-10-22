@@ -93,7 +93,7 @@ def status(course_id: str = 'autodidata'):
 
 @app.get('/api/health')
 def health():
-    return {'app': 'trilha', 'version': '1.3.0', 'ready': True, 'accelerated': aes.cryptg is not None}
+    return {'app': 'trilha', 'version': '1.4.0', 'ready': True, 'accelerated': aes.cryptg is not None}
 
 
 def require_course(course_id):

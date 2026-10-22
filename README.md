@@ -12,7 +12,7 @@ Requer Python 3.11 ou superior no PATH. As dependências são instaladas automat
 4. Execute `iniciar.bat`. O navegador abre quando o servidor responde em [127.0.0.1:8765](http://127.0.0.1:8765).
 5. Escolha o curso em **Meus cursos** e clique em **Sincronizar Telegram**.
 
-Os índices iniciais incluem Autodidata Fluente e WISE UP Online. O acesso aos vídeos depende da sua conta e dos canais configurados. Convites, credenciais e vídeos não são distribuídos neste repositório.
+Os índices iniciais incluem Autodidata Fluente, WISE UP Online e Formação Vibe Coding – Hora de Codar (224 aulas em 33 seções). O acesso aos vídeos depende da sua conta e dos canais configurados. Convites, credenciais e vídeos não são distribuídos neste repositório.
 
 ## Recursos
 
@@ -31,7 +31,7 @@ O servidor escuta somente em localhost. Não foi preparado para exposição púb
 
 `data/` contém as credenciais, a sessão da conta, o banco de progresso e o cache. Essa pasta é ignorada pelo Git. Mantenha-a privada; para fazer backup, copie-a com o servidor fechado. Não publique arquivos de sessão nem os convites dos canais.
 
-Os convites também podem ser informados pelas variáveis `TRILHA_AUTODIDATA_INVITE` e `TRILHA_WISE_UP_INVITE` antes da primeira criação do banco. Para atualizar convites já cadastrados, use `configurar-cursos.bat`.
+Os convites também podem ser informados pelas variáveis `TRILHA_AUTODIDATA_INVITE`, `TRILHA_WISE_UP_INVITE` e `TRILHA_VIBE_CODING_INVITE` antes da primeira criação do banco. Para atualizar convites já cadastrados, use `configurar-cursos.bat`.
 
 ## Desenvolvimento e testes
 

@@ -17,7 +17,9 @@ def main():
         with db() as con:
             con.execute('UPDATE courses SET invite=? WHERE id=?',(link,course['id']))
         cfg = settings()
-        cfg['invite' if course['id'] == 'autodidata' else 'wise_invite'] = link
+        key = {'autodidata': 'invite', 'wise-up': 'wise_invite', 'vibe-coding': 'vibe_invite'}.get(course['id'])
+        if key:
+            cfg[key] = link
         save_settings(cfg)
         print('Convite salvo localmente.')
     print('\nAgora abra a plataforma, escolha o curso e sincronize.')

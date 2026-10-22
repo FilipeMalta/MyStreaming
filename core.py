@@ -36,6 +36,44 @@ WISE_MODULES = [
 ]
 
 
+VIBE_MODULES = [
+    ('Fundamentos · Engenharia de Prompt · Técnicas avançadas', 1, 7),
+    ('Ferramentas · Lovable · Fundamentos', 8, 24),
+    ('Ferramentas · Codex · FitAI', 25, 26),
+    ('Projetos · Antigravity · Conclusão', 27, 27),
+    ('Projetos · Lovable · Introdução', 28, 28),
+    ('Projetos · Lovable · SaaS MarketLens', 29, 49),
+    ('Projetos · Lovable · Blog com pagamento e deploy', 50, 51),
+    ('Projetos · Lovable · Corretor de Redações, n8n e Stripe', 52, 71),
+    ('Projetos · Lovable · Conclusão', 72, 72),
+    ('Bônus · n8n · Fundamentos', 73, 84),
+    ('Bônus · n8n · Primeiro workflow', 85, 88),
+    ('Bônus · n8n · Planilhas e Slack', 89, 92),
+    ('Bônus · n8n · Agente Analisador de Currículo', 93, 98),
+    ('Bônus · n8n · Nós de IA', 99, 101),
+    ('Bônus · n8n · Economizar com as IAs', 102, 102),
+    ('Bônus · n8n · Conclusão', 103, 103),
+    ('Bônus · Google AI Studio · Novidades Antigravity', 104, 106),
+    ('Bônus · Git e GitHub · Introdução', 107, 116),
+    ('Bônus · Git e GitHub · Git fundamental', 117, 134),
+    ('Bônus · Git e GitHub · Branches', 135, 147),
+    ('Bônus · Git e GitHub · Compartilhamento e atualização', 148, 155),
+    ('Bônus · Git e GitHub · Análise e inspeção', 156, 160),
+    ('Bônus · Git e GitHub · Administração', 161, 167),
+    ('Bônus · Git e GitHub · Melhorando os commits', 168, 170),
+    ('Bônus · Git e GitHub · Explorando o GitHub', 171, 183),
+    ('Bônus · Git e GitHub · Markdown', 184, 193),
+    ('Bônus · Git e GitHub · Portfólio com GitHub Pages', 194, 202),
+    ('Bônus · Git e GitHub · Encerramento', 203, 203),
+    ('Bônus · Engenharia de Prompt · Introdução', 204, 206),
+    ('Bônus · Engenharia de Prompt · Fundamentos', 207, 211),
+    ('Bônus · Engenharia de Prompt · Estratégias', 212, 216),
+    ('Bônus · Engenharia de Prompt · Técnicas avançadas', 217, 223),
+    ('Bônus · Engenharia de Prompt · Conclusão', 224, 224),
+]
+INDEXED_MODULES = {'wise-up': WISE_MODULES, 'vibe-coding': VIBE_MODULES}
+
+
 def course_number(tags, max_number=88):
     for tag in tags:
         match = re.fullmatch(r'#f0*(\d+)', tag, re.I)
@@ -77,6 +115,10 @@ def db():
     con.execute('INSERT OR IGNORE INTO courses(id,name,invite,layout,description) VALUES(?,?,?,?,?)',
                 ('wise-up', 'WISE UP Online · Flávio Augusto', cfg.get('wise_invite') or WISE_INVITE, 'indexed', 'Inglês · 109h 2min e 173,1 GB informados no catálogo'))
     con.execute("UPDATE courses SET layout='indexed' WHERE id='wise-up' AND layout<>'indexed'")
+    con.execute('INSERT OR IGNORE INTO courses(id,name,invite,layout,description) VALUES(?,?,?,?,?)',
+                ('vibe-coding', 'Formação Vibe Coding – Hora de Codar',
+                 cfg.get('vibe_invite') or os.environ.get('TRILHA_VIBE_CODING_INVITE', ''),
+                 'indexed', '224 aulas no índice · 18h 47min e 8,2 GB informados no catálogo'))
     if cfg.get('chat_id'):
         con.execute("UPDATE courses SET chat_id=? WHERE id='autodidata' AND chat_id IS NULL", (cfg['chat_id'],))
     try:
@@ -190,8 +232,8 @@ def all_lessons(course_id='autodidata'):
                                   if row['number'] and start <= row['number'] <= end), 'extras')
         else:
             row['number'] = course_number(row['tags'], None)
-            if course_id == 'wise-up' and row['number']:
-                row['group_name'] = next((name for name,start,end in WISE_MODULES if start <= row['number'] <= end),row['group_name'])
+            if course_id in INDEXED_MODULES and row['number']:
+                row['group_name'] = next((name for name,start,end in INDEXED_MODULES[course_id] if start <= row['number'] <= end),row['group_name'])
             row['module'] = group_code(row['group_name'])
     return sorted(result, key=lambda r: (r['number'] or 9999999, r['message_id']))
 
@@ -209,8 +251,8 @@ def get_course(course_id):
 def course_modules(course_id):
     if course_id == 'autodidata':
         return [dict(code=code, name=name, start=start, end=end, total=end-start+1) for code, name, start, end in MODULES]
-    if course_id == 'wise-up':
-        return [dict(code=group_code(name),name=name,start=start,end=end,total=end-start+1) for name,start,end in WISE_MODULES]
+    if course_id in INDEXED_MODULES:
+        return [dict(code=group_code(name),name=name,start=start,end=end,total=end-start+1) for name,start,end in INDEXED_MODULES[course_id]]
     with db() as con:
         rows = con.execute('SELECT group_name,COUNT(*) AS total FROM lessons WHERE course_id=? GROUP BY group_name ORDER BY MIN(message_id)', (course_id,)).fetchall()
     return [dict(code=group_code(row['group_name']), name=row['group_name'], total=row['total']) for row in rows]
@@ -222,7 +264,7 @@ def course_catalog():
     for course in courses:
         items = all_lessons(course['id'])
         course['lesson_count'] = len(items)
-        course['total'] = 88 if course['layout'] == 'autodidata' else 519 if course['id'] == 'wise-up' else len(items)
+        course['total'] = 88 if course['layout'] == 'autodidata' else max(end for _, _, end in INDEXED_MODULES[course['id']]) if course['id'] in INDEXED_MODULES else len(items)
         course['completed'] = (sum(all(l['completed'] for l in items if l['number'] == n)
                                    for n in {l['number'] for l in items if l['number']})
                                if course['layout'] in ('autodidata','indexed') else sum(l['completed'] for l in items))

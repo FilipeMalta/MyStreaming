@@ -16,7 +16,7 @@ def ready():
     try:
         with urllib.request.urlopen(URL + '/api/health', timeout=1) as response:
             data = json.load(response)
-            return data.get('app') == 'trilha' and data.get('version') == '1.3.0'
+            return data.get('app') == 'trilha' and data.get('version') == '1.4.0'
     except (OSError, ValueError):
         return False
 

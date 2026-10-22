@@ -73,7 +73,7 @@ class AppTests(unittest.TestCase):
     def test_local_access_and_empty_state(self):
         with TestClient(app.app) as client:
             self.assertEqual(client.get('/').status_code,200)
-            self.assertEqual(client.get('/api/health').json()['version'],'1.3.0')
+            self.assertEqual(client.get('/api/health').json()['version'],'1.4.0')
             self.assertEqual(len(client.get('/api/modules').json()),13)
             self.assertFalse(client.get('/api/status').json()['configured'])
             self.assertEqual(client.post('/api/sync').status_code,403)
@@ -213,6 +213,24 @@ class AppTests(unittest.TestCase):
             self.assertIn('attachment;',response.headers['content-disposition'])
             self.assertIn('apostila.pdf',response.headers['content-disposition'])
 
+    def test_vibe_index_and_progress_are_isolated(self):
+        modules = core.course_modules('vibe-coding')
+        numbers = [n for m in modules for n in range(m['start'], m['end'] + 1)]
+        self.assertEqual(numbers, list(range(1, 225)))
+        self.assertEqual(len(modules), 33)
+        for number in (1, 24, 25, 107, 224):
+            core.upsert_lesson(core.lesson_from_message(sample(number, f'#F{number:03} Aula'), -100777, 'vibe-coding'))
+        with TestClient(app.app) as client:
+            items = client.get('/api/lessons?course_id=vibe-coding').json()
+            self.assertEqual([l['number'] for l in items], [1, 24, 25, 107, 224])
+            self.assertIn('FitAI', items[2]['group_name'])
+            client.patch('/api/lessons/' + items[0]['id'], json={'completed': True}, headers=self.headers)
+            catalog = {c['id']: c for c in client.get('/api/courses').json()}
+            self.assertEqual(catalog['vibe-coding']['total'], 224)
+            self.assertEqual(catalog['vibe-coding']['completed'], 1)
+            self.assertEqual(catalog['autodidata']['completed'], 0)
+            self.assertNotIn('invite', catalog['vibe-coding'])
+
     def test_legacy_database_migration_preserves_position_and_completion(self):
         import sqlite3
         from pathlib import Path
@@ -229,6 +247,6 @@ class AppTests(unittest.TestCase):
                 self.assertEqual(old['course_id'],'autodidata')
                 self.assertTrue(old['completed'])
                 self.assertEqual(old['position'],42.5)
-                self.assertEqual(len(core.course_catalog()),2)
+                self.assertEqual(len(core.course_catalog()),3)
 if __name__ == '__main__':
     unittest.main()
